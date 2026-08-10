@@ -39,6 +39,7 @@ que trae datos de verdad.
 - [x] Estructura del repo
 - [x] Fetcher de yfinance + esquema unificado
 - [x] Capa de caché (parquet)
-- [ ] Fetcher de Stooq (respaldo)
-- [ ] Reconciliación automática entre fuentes
+- [x] Fetcher de Stooq (respaldo)
+- [x] Reconciliación automática entre fuentes (probada con datos sintéticos — ver `src/data/reconcile.py`)
 - [ ] Constituyentes históricos del S&P 500 (evitar sesgo de supervivencia)
+- [ ] Orquestador del pipeline completo (`build_dataset.py`)
