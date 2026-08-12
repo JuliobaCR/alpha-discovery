@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 data_cache/*.parquet
 .env
+
+# data_cache/external/ (CSV de constituyentes + metadata) y
+# data_cache/sp500_dataset_report.json SÍ se versionan a propósito —
+# son la fuente de verdad de reproducibilidad del dataset del paper.
+# No cambiar el patrón de arriba a uno recursivo (data_cache/**/*.parquet)
+# sin revisar esto primero.
