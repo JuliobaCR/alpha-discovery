@@ -15,7 +15,11 @@ END_DATE = "2025-12-31"
 
 # --- Fuentes, en orden de prioridad (cascada) ---
 # El pipeline intenta la primera; si falta un dato, cae a la siguiente.
-SOURCE_PRIORITY = ["yfinance", "stooq"]  # tiingo y alpha_vantage se agregan después (necesitan API key)
+# Stooq quedó fuera: empezó a bloquear descargas programáticas con un
+# challenge anti-bot (confirmado en vivo, no es un problema de nuestro
+# código) — fetch_stooq.py se deja en el repo por si se puede resolver
+# más adelante, pero build_dataset.py ya no lo usa.
+SOURCE_PRIORITY = ["yfinance", "tiingo"]  # alpha_vantage se agrega después si hace falta otro respaldo
 
 # --- Umbrales de reconciliación automática (sin revisión manual) ---
 DIFF_THRESHOLD_ACCEPT = 0.005   # 0.5% — diferencia aceptable entre fuentes, se promedia o prioriza
@@ -26,5 +30,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = PROJECT_ROOT / "data_cache"
 CACHE_DIR.mkdir(exist_ok=True)
 
+EXTERNAL_DIR = CACHE_DIR / "external"  # insumos crudos de terceros (ej. lista de constituyentes) — se versionan en git, a diferencia de los .parquet regenerables
+EXTERNAL_DIR.mkdir(exist_ok=True)
+
 # --- Esquema unificado que toda fuente debe producir ---
 UNIFIED_COLUMNS = ["ticker", "fecha", "open", "high", "low", "close", "volumen", "close_ajustado", "fuente"]
+
+# --- Universo histórico de tickers (constituyentes del S&P 500) ---
+# Fuente documentada y citable: historial de cambios del índice derivado de
+# Wikipedia, mantenido activamente. Ver src/data/fetch_constituents.py.
+CONSTITUENTS_URL = "https://raw.githubusercontent.com/fja05680/sp500/master/S%26P%20500%20Historical%20Components%20%26%20Changes.csv"
+
+# --- Orquestador (build_dataset.py) ---
+# Pausa entre tickers para no disparar rate-limiting al recorrer el universo
+# completo (cientos de tickers). Valor conservador de partida — calibrar en
+# tu máquina si corre demasiado lento o si igual te limitan la tasa.
+BUILD_DATASET_DELAY_SECONDS = 0.5
