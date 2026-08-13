@@ -8,6 +8,10 @@ o el rango de fechas, solo tocas este archivo.
 
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()  # carga .env (ej. TIINGO_API_KEY) si existe — no falla si no existe
+
 # --- Mercado y rango histórico ---
 MARKET = "S&P 500"
 START_DATE = "2010-01-01"   # ~15 años hacia atrás desde hoy, cubre 2020 (COVID) y 2022
@@ -40,6 +44,13 @@ UNIFIED_COLUMNS = ["ticker", "fecha", "open", "high", "low", "close", "volumen",
 # Fuente documentada y citable: historial de cambios del índice derivado de
 # Wikipedia, mantenido activamente. Ver src/data/fetch_constituents.py.
 CONSTITUENTS_URL = "https://raw.githubusercontent.com/fja05680/sp500/master/S%26P%20500%20Historical%20Components%20%26%20Changes.csv"
+
+# --- CPI (para medir Return/Max Drawdown/Calmar en términos reales) ---
+# CPIAUCSL = CPI-U, todos los artículos, EE.UU., mensual, ajustada
+# estacionalmente. Fuente: FRED (Reserva Federal), descarga directa sin
+# API key. Ver src/data/fetch_cpi.py.
+CPI_SERIES_ID = "CPIAUCSL"
+CPI_URL = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={CPI_SERIES_ID}"
 
 # --- Orquestador (build_dataset.py) ---
 # Pausa entre tickers para no disparar rate-limiting al recorrer el universo
