@@ -1,4 +1,4 @@
-# alpha-discovery — Fase 1 (datos) completa + primer componente de Fase 2 (motor de backtest)
+# alpha-discovery — Fase 1 (datos) completa + Fase 2 en curso (motor de backtest + representación GP)
 
 Pipeline de adquisición de datos para el Paper 1 (GECCO 2027):
 *"LLM-Guided Variation Operators for Multi-Objective Evolutionary Alpha Discovery"*.
@@ -26,6 +26,12 @@ disco — listo para que el motor evolutivo (Fase 2) lo consuma.
 | `src/engine/weights.py` | Señal de alpha → pesos de portafolio long-short, ajustados por volatilidad |
 | `src/engine/metrics.py` | Fórmulas de los 6 objetivos (Sharpe, Sortino, Return, Max Drawdown, Calmar, Turnover) |
 | `src/engine/backtest.py` | Orquestador del motor: pivot, prevención de lookahead bias, deslistamiento, deflactación CPI |
+| `src/engine/gp/types.py` | Categorías de tipo para los árboles: Price, Bounded, Volatility, Volume |
+| `src/engine/gp/indicators.py` | Fórmulas de indicadores técnicos (EMA, SMA, RSI, ATR, ts_std, rank cross-sectional) |
+| `src/engine/gp/preprocessing.py` | Ajusta OHLC por splits/dividendos y arma el panel que consumen los árboles |
+| `src/engine/gp/primitives.py` | Cablea las 4 categorías con DEAP (`PrimitiveSetTyped`) — 28 primitivos |
+| `src/engine/gp/population.py` | Genera la población inicial (Ramped Half-and-Half, reproducible por semilla) |
+| `src/engine/gp/evaluate.py` | Compila un árbol y produce el `signal` que consume `compute_objectives` |
 
 ## Cómo correrlo
 
@@ -67,11 +73,11 @@ commits individuales de esa primera versión.
 13. **Diseño de los 6 objetivos cerrado para Fase 2** (documentado en `Paper1_Repaso_Conceptos.md`, sección 7.1): Return/Sharpe/Sortino/Calmar se calculan como mediana de valores anuales (no promedio del periodo completo) para seleccionar por consistencia y mitigar alpha decay; Return/Max Drawdown/Calmar se calculan en términos reales (deflactados por CPI); split in-sample 2010-2021 / out-of-sample 2022-2025, con walk-forward de alpha decay sobre el frente final.
 
 14. **Motor de backtest (`src/engine/`)** — convierte una señal de alpha en los 6 objetivos: pesos long-short neutrales a mercado, ponderados por rank continuo y ajustados por volatilidad inversa (`weights.py`); fórmulas de los 6 objetivos con mediana anual y deflactación CPI (`metrics.py`); orquestador que previene lookahead bias (shift explícito señal→retorno) y trata el retorno de deslistamiento como -100%, no como dato faltante (`backtest.py`). **Verificado con casos calculados a mano** (no solo probado por ejecución): shift de lookahead, deslistamiento, gross=1/net=0 exactos, y sanity check estadístico con ruido puro (Sharpe centrado en 0 across semillas, como se espera sin señal real).
+15. **Representación GP (`src/engine/gp/`)** — árboles de expresión tipados con DEAP: 28 primitivos con ventanas estándar citables (RSI 14, ATR 14, EMA 12/26/50/200, SMA/ts_std 20/50/200 — nada de números sin fundamento financiero), ATR como terminal precalculado (no primitivo de 3 argumentos, para no romper la semántica de Wilder), OHLC ajustado por splits antes de calcular indicadores, generación Ramped Half-and-Half con profundidad 2-6 y raíz de cualquiera de las 4 categorías. **Probado de punta a punta con árboles generados de verdad** (no solo casos de juguete): de 8 árboles reales evaluados contra el motor de backtest, 4 dieron objetivos finitos y 4 degenerados fueron correctamente detectados y rechazados (ej. `volumen - volumen = 0` → división protegida → NaN → candidato descartado).
 
 ### Lo que sigue — Fase 2 (resto)
 
-15. Representación de alphas como árboles de expresión (GP) + generación de población inicial (Ramped Half-and-Half).
-16. Motor de búsqueda NSGA-II + operadores clásicos (brazo control del ablation).
+16. Motor de búsqueda NSGA-II + operadores clásicos (subtree crossover, point/subtree/shrink mutation — brazo control del ablation).
 17. Operador de mutación/cruce guiado por LLM (brazo experimental) + validación de salida estructurada.
 18. Baselines: MO-CMA-ES, GDE3, Random Search sobre representación de vector de pesos.
 19. Protocolo experimental completo: ~30 semillas × 5 configuraciones, métricas EMO (hypervolume, IGD, spread), análisis estadístico (Wilcoxon + Bonferroni).
@@ -91,7 +97,7 @@ commits individuales de esa primera versión.
 
 **Fase 2:**
 - [x] Motor de backtest (calcula los 6 objetivos a partir de una señal, ajustado por volatilidad, verificado a mano)
-- [ ] Representación de alphas (árboles GP) + población inicial
+- [x] Representación de alphas (árboles GP tipados con DEAP) + población inicial, probado de punta a punta
 - [ ] NSGA-II + operadores clásicos
 - [ ] Operador guiado por LLM
 - [ ] Baselines (MO-CMA-ES, GDE3, Random Search)
