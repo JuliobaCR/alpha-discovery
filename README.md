@@ -1,4 +1,4 @@
-# alpha-discovery — Pipeline de datos (Fase 1 completa)
+# alpha-discovery — Fase 1 (datos) completa + primer componente de Fase 2 (motor de backtest)
 
 Pipeline de adquisición de datos para el Paper 1 (GECCO 2027):
 *"LLM-Guided Variation Operators for Multi-Objective Evolutionary Alpha Discovery"*.
@@ -23,6 +23,9 @@ disco — listo para que el motor evolutivo (Fase 2) lo consuma.
 | `src/data/cache.py` | Guarda/recupera datos ya descargados en formato parquet, por ticker y por fuente |
 | `src/data/reconcile.py` | Compara fuentes y resuelve discrepancias automáticamente (umbrales 0.5% / 5%) |
 | `src/data/build_dataset.py` | Orquestador: junta universo + fetch + caché + reconciliación en un solo comando |
+| `src/engine/weights.py` | Señal de alpha → pesos de portafolio long-short, ajustados por volatilidad |
+| `src/engine/metrics.py` | Fórmulas de los 6 objetivos (Sharpe, Sortino, Return, Max Drawdown, Calmar, Turnover) |
+| `src/engine/backtest.py` | Orquestador del motor: pivot, prevención de lookahead bias, deslistamiento, deflactación CPI |
 
 ## Cómo correrlo
 
@@ -63,9 +66,10 @@ commits individuales de esa primera versión.
 12. **`fetch_cpi.py`** — CPI de EE.UU. (FRED, serie CPIAUCSL, sin API key). **Confirmado: 954 observaciones mensuales, 1947 a la fecha.**
 13. **Diseño de los 6 objetivos cerrado para Fase 2** (documentado en `Paper1_Repaso_Conceptos.md`, sección 7.1): Return/Sharpe/Sortino/Calmar se calculan como mediana de valores anuales (no promedio del periodo completo) para seleccionar por consistencia y mitigar alpha decay; Return/Max Drawdown/Calmar se calculan en términos reales (deflactados por CPI); split in-sample 2010-2021 / out-of-sample 2022-2025, con walk-forward de alpha decay sobre el frente final.
 
-### Lo que sigue — Fase 2 (motor evolutivo)
+14. **Motor de backtest (`src/engine/`)** — convierte una señal de alpha en los 6 objetivos: pesos long-short neutrales a mercado, ponderados por rank continuo y ajustados por volatilidad inversa (`weights.py`); fórmulas de los 6 objetivos con mediana anual y deflactación CPI (`metrics.py`); orquestador que previene lookahead bias (shift explícito señal→retorno) y trata el retorno de deslistamiento como -100%, no como dato faltante (`backtest.py`). **Verificado con casos calculados a mano** (no solo probado por ejecución): shift de lookahead, deslistamiento, gross=1/net=0 exactos, y sanity check estadístico con ruido puro (Sharpe centrado en 0 across semillas, como se espera sin señal real).
 
-14. Motor de backtest: a partir de una fórmula de alpha y el dataset de Fase 1, calcular la serie de retornos del portafolio y los 6 objetivos (con mediana anual + deflactación CPI ya definidas).
+### Lo que sigue — Fase 2 (resto)
+
 15. Representación de alphas como árboles de expresión (GP) + generación de población inicial (Ramped Half-and-Half).
 16. Motor de búsqueda NSGA-II + operadores clásicos (brazo control del ablation).
 17. Operador de mutación/cruce guiado por LLM (brazo experimental) + validación de salida estructurada.
@@ -85,8 +89,8 @@ commits individuales de esa primera versión.
 - [x] Orquestador del pipeline completo (`build_dataset.py`)
 - [x] Metodología de los 6 objetivos cerrada (mediana anual, términos reales, split in/out-of-sample)
 
-**Fase 2 — pendiente:**
-- [ ] Motor de backtest (calcula los 6 objetivos a partir de una fórmula)
+**Fase 2:**
+- [x] Motor de backtest (calcula los 6 objetivos a partir de una señal, ajustado por volatilidad, verificado a mano)
 - [ ] Representación de alphas (árboles GP) + población inicial
 - [ ] NSGA-II + operadores clásicos
 - [ ] Operador guiado por LLM

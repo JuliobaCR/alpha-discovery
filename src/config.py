@@ -57,3 +57,8 @@ CPI_URL = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={CPI_SERIES_ID}"
 # completo (cientos de tickers). Valor conservador de partida — calibrar en
 # tu máquina si corre demasiado lento o si igual te limitan la tasa.
 BUILD_DATASET_DELAY_SECONDS = 0.5
+
+# --- Motor de backtest (src/engine/) ---
+RISK_FREE_RATE = 0.0            # anual, para Sharpe/Sortino — decisión estándar cuando no se especifica, ajustable
+MIN_TRADING_DAYS_PER_YEAR = 20  # umbral para que un año cuente en la mediana anual (Return/Sharpe/Sortino)
+VOLATILITY_WINDOW = 20          # días de trading para estimar volatilidad reciente por ticker (~1 mes, convención estándar) — usado para escalar el tamaño de cada posición por riesgo
