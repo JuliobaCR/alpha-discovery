@@ -3,3 +3,4 @@ pandas>=2.0.0
 pyarrow>=15.0.0
 pandas-datareader>=0.10.0
 python-dotenv>=1.0.0
+deap>=1.4

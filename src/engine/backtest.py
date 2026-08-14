@@ -43,6 +43,27 @@ def prices_to_wide(prices_df: pd.DataFrame) -> pd.DataFrame:
     return df.pivot(index="fecha", columns="ticker", values="close_ajustado")
 
 
+def prices_to_wide_multi(prices_df: pd.DataFrame, value_cols: list[str]) -> dict[str, pd.DataFrame]:
+    """
+    Igual que prices_to_wide, pero pivotea varias columnas a la vez (ej.
+    "high", "low", "volumen") y devuelve un panel ancho por cada una —
+    lo que necesitan los indicadores técnicos de src/engine/gp/ (ATR, RSI,
+    etc.), que requieren más que solo close_ajustado. No reemplaza a
+    prices_to_wide (que sigue siendo lo que usa compute_objectives) para
+    no arriesgar romper nada ya construido.
+    """
+    df = prices_df.copy()
+    df["fecha"] = pd.to_datetime(df["fecha"])
+
+    if df.duplicated(["ticker", "fecha"]).any():
+        raise ValueError(
+            "prices_df tiene filas duplicadas (ticker, fecha) — no se puede "
+            "pivotear de forma segura. Revisa reconcile_sources/build_dataset."
+        )
+
+    return {col: df.pivot(index="fecha", columns="ticker", values=col) for col in value_cols}
+
+
 def _deflate_returns(returns_nominal: pd.Series, trading_dates: pd.DatetimeIndex) -> pd.Series:
     """
     r_real(t) = (1 + r_nominal(t)) * CPI(t_prev) / CPI(t) - 1
